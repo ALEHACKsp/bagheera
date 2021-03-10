@@ -9,5 +9,5 @@ Developed in `C++`, can be used to award polymorphic features to any piece of te
 Some of  Bagheera's features are the following:
 
 - Code polymorphism
-- tiririririri
-- 
+- Feature$_1$
+- Feature$_2$

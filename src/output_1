@@ -1,0 +1,96 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GeneratePrologue()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; beginning of decryption function (prologue)
+	enter   0, 0
+
+; save sensitive registers (stdcall)
+	push	esi
+	push	ebx
+	push	edi
+
+; get the parameter passed to this function
+	mov	ecx, [ebp+8]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GenerateDeltaOffset()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	call	delta_offset
+
+; unused instructions to simulate non suspicious behaviour to avoid offset calculation detection
+	xor	eax, eax
+	leave
+	retn	4
+
+delta_offset:
+
+; EBX will contain the address of the label delta_offset
+	mov	ebx, [esp]
+	add	esp, 4
+
+; correct the address so that it points to the encrypted data
+	add	ebx, 51h
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; SetupDecryptionKeys()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; set up the decryption key
+	mov	edx, 918D3D1Bh
+	add	edx, 78170F2Ah
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GenerateDecryption()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; number of blocks to decrypt
+	mov	eax, 4
+
+decryption_loop:
+
+; take one block of encrypted data
+	mov	esi, [ebx]
+
+; decryption instructions (random)
+	xor	esi, 138E6781h
+	sub	esi, edx
+	not	esi
+	xor	esi, edx
+
+; write the decrypted block to the output buffer
+	mov	[ecx], esi
+
+	add	ebx, 4
+	add	ecx, 4
+	dec	eax
+	jnz	short decryption_loop
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; SetupOutputRegisters()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; set up values returned by the function
+; namely the size of the decrypted data
+	mov	eax, 0Dh
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GenerateEpilogue()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; function epilogue and return to caller
+	pop	edi
+	pop	ebx
+	pop	esi
+	leave
+	retn	4
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; AlignDecryptorBody()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; align function to 16 byte boundary (using NOP instructions)
+	db 5 dup(90h)
+
+; encrypted data
+	db 0B6h, 044h, 052h, 0B0h, 09Bh, 087h, 05Eh, 0B1h
+	db 08Ch, 04Bh, 06Ah, 0F3h, 07Eh, 0ACh, 0B5h, 057h
+

@@ -1,0 +1,84 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GeneratePrologue()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; beginning of decryption function (prologue)
+	push	ebp
+	mov	ebp, esp
+
+; save sensitive registers (stdcall)
+	push	edi
+	push	ebx
+	push	esi
+
+; get the parameter passed to this function
+	mov	esi, [ebp+8]
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; GenerateDeltaOffset()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+	call	delta_offset
+
+; unused instructions to simulate non suspicious behaviour to avoid offset calculation detection
+	xor	eax, eax
+	leave
+	retn	4
+
+delta_offset:
+
+; ECX will contain the address of the label delta_offset
+	mov	ecx, [esp]
+	add	esp, 4
+
+; correct the address so that it points to the encrypted data
+	add	ecx, 4Ah
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EncryptInputBuffer()
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; set up the decryption key
+	mov	ebx, 76F71EBFh
+	sub	ebx, 50531439h
+
+; number of blocks to decrypt
+	mov	edi, 4
+
+; decryption loop
+decryption_loop:
+
+; take one block of encrypted data
+	mov	eax, [ecx]
+
+; decryption instructions (random)
+	neg	eax
+	sub	eax, 4B1A7C17h
+	not	eax
+	xor	eax, ebx
+	neg	eax
+
+; write the decrypted block to the output buffer
+	mov	[esi], eax
+
+	add	ecx, 4
+	add	esi, 4
+	dec	edi
+	jnz	short decryption_loop
+
+; set up values returned by the function
+; namely the size of the decrypted data
+	mov	eax, 0Dh
+
+; function epilogue and return to caller
+	pop	esi
+	pop	ebx
+	pop	edi
+	leave
+	retn	4
+
+; align function to 16 byte boundary (using int3 instructions)
+	db 5 dup(0CCh)
+
+; encrypted data
+	db 028h, 014h, 01Dh, 06Ah, 001h, 059h, 012h, 06Bh
+	db 0F2h, 01Ch, 025h, 0ADh, 070h, 0C2h, 07Ch, 0CAh
